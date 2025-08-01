@@ -1,0 +1,45 @@
+/* Contents of tailwind.min.css (paste the minified Tailwind CSS here) */
+/* ... (large minified CSS, ~3.6MB) ... */
+
+/* Fonts from fonts.css */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  src: url('../fonts/Inter-Regular.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500;
+  src: url('../fonts/Inter-Medium.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 700;
+  src: url('../fonts/Inter-Bold.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 800;
+  src: url('../fonts/Inter-ExtraBold.woff2') format('woff2');
+}
+
+/* Custom styles from custom.css */
+.custom-file-upload {
+  display: inline-block;
+  padding: 6px 12px;
+  cursor: pointer;
+  background-color: #4b5563;
+  color: white;
+  border-radius: 4px;
+}
+.custom-file-upload:hover {
+  background-color: #6b7280;
+}
+#output {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
