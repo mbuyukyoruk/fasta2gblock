@@ -1327,6 +1327,12 @@ document.getElementById("gcBalance").addEventListener("change", () => {
   toggleGCFields();
   saveInputs();
 });
+document.getElementById("toggleInstructions").onclick = () => {
+  const div = document.getElementById("instructions");
+  const btn = document.getElementById("toggleInstructions");
+  div.classList.toggle("hidden");
+  btn.textContent = div.classList.contains("hidden") ? "Show Instructions" : "Hide Instructions";
+};
 document.getElementById("themeToggle").addEventListener("change", () => {
   document.documentElement.dataset.theme = document.getElementById("themeToggle").checked ? "dark" : "light";
   localStorage.setItem("theme", document.documentElement.dataset.theme);
