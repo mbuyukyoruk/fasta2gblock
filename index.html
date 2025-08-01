@@ -116,8 +116,14 @@
     tr:nth-child(even) {
       background-color: #f9fafb;
     }
+    tr:hover {
+      background-color: #e5e7eb;
+    }
     [data-theme="dark"] tr:nth-child(even) {
       background-color: #374151;
+    }
+    [data-theme="dark"] tr:hover {
+      background-color: #4b5563;
     }
     [data-theme="dark"] th, [data-theme="dark"] td {
       border-color: #4b5563;
@@ -192,7 +198,8 @@
     }
     [data-theme="dark"] textarea,
     [data-theme="dark"] input[type="text"],
-    [data-theme="dark"] input[type="number"] {
+    [data-theme="dark"] input[type="number"],
+    [data-theme="dark"] #sequenceInput {
       color: #000000;
     }
     #histogramContainer {
@@ -211,7 +218,6 @@
     }
     #gcHistogramCanvas {
       max-width: 100%;
-      height: 400px;
       display: block;
       margin: 0 auto;
       border: 1px solid #e5e7eb;
@@ -219,6 +225,40 @@
     }
     [data-theme="dark"] #gcHistogramCanvas {
       border-color: #4b5563;
+    }
+    #overlapTableContainer {
+      max-width: 100%;
+      padding: 2rem;
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    [data-theme="dark"] #overlapTableContainer {
+      background: #374151;
+      border-color: #4b5563;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    }
+    .input-error {
+      border-color: #ef4444 !important;
+    }
+    .tooltip {
+      position: relative;
+    }
+    .tooltip:hover:after {
+      content: attr(data-tooltip);
+      position: absolute;
+      left: 0;
+      top: 100%;
+      margin-top: 8px;
+      background: #1f2937;
+      color: #fff;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      white-space: nowrap;
+      z-index: 10;
     }
   </style>
 </head>
@@ -234,7 +274,7 @@
     <button id="toggleInstructions" class="text-indigo-600 font-medium mb-2 hover:underline">Hide Instructions</button>
     <div id="instructions" class="mb-4">
       <p class="text-gray-600 mb-4">
-        This tool reads a FASTA file or manually entered sequence, generates fragments of the sequence into overlapping fragments of a specified length and overlap for helping to design gblocks to order. Optionally, it adjusts each overlap to achieve user-specified GC%, avoid long repeats, and outputs the fragments in FASTA format.
+        This tool reads a FASTA file or manually entered sequence, generates fragments of the sequence into overlapping fragments of a specified length and overlap for helping to design gBlocks to order. Optionally, it adjusts each overlap to achieve user-specified GC%, avoid long repeats, and outputs the fragments in FASTA format.
       </p>
       <svg id="Layer_1" focusable="false" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 516.74 131.32">
         <defs>
@@ -321,76 +361,68 @@
             <span class="text-gray-700 font-medium">Enter sequence manually</span>
           </label>
         </div>
-        <div id="fileInputContainer" class="group relative">
+        <div id="fileInputContainer" class="tooltip" data-tooltip="Upload a FASTA file (.fa, .fasta) with DNA sequence">
           <label class="block w-full">
             <span class="text-gray-700 font-medium">FASTA file:</span>
             <input type="file" id="fastaFile" accept=".fa,.fasta" aria-label="Upload FASTA file" class="mt-1 block w-full border border-gray-300 rounded-md p-2 focus:ring-teal-500 focus:border-teal-500">
             <span id="fileName" class="text-gray-500 text-sm"></span>
             <span id="seqLength" class="text-gray-500 text-sm block"></span>
-            <span id="fastaFileError" class="text-red-600 text-sm hidden">Pick a FASTA file first</span>
-            <span id="fastaFormatError" class="text-red-600 text-sm hidden">Invalid FASTA format</span>
-            <span class="absolute left-0 top-12 mt-1 hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 z-10">Upload a FASTA file to fragment</span>
+            <span id="fastaFileError" class="text-red-600 text-sm hidden">Please select a FASTA file</span>
+            <span id="fastaFormatError" class="text-red-600 text-sm hidden">Invalid FASTA format: must start with '>' or contain A, C, G, T, N</span>
           </label>
         </div>
-        <div id="sequenceInputContainer" class="group relative hidden">
+        <div id="sequenceInputContainer" class="tooltip hidden" data-tooltip="Enter a FASTA sequence or plain DNA sequence (A, C, G, T, N)">
           <label class="block w-full">
             <span class="text-gray-700 font-medium">Enter sequence:</span>
             <textarea id="sequenceInput" rows="4" placeholder=">Header&#10;ACTG...&#10;OR&#10;ACTG..." aria-label="Enter sequence manually" class="mt-1 block w-full border border-gray-300 rounded-md p-2 focus:ring-teal-500 focus:border-teal-500"></textarea>
             <span id="seqLengthSequence" class="text-gray-500 text-sm block"></span>
-            <span id="sequenceError" class="text-red-600 text-sm hidden">Invalid sequence: use A, C, G, T, N, or FASTA format</span>
-            <span class="absolute left-0 top-12 mt-1 hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 z-10">Enter a FASTA sequence or plain sequence (A, C, G, T, N)</span>
+            <span id="sequenceError" class="text-red-600 text-sm hidden">Invalid sequence: use A, C, G, T, N, or FASTA format with '>' header</span>
           </label>
         </div>
       </div>
       <div class="flex flex-col md:flex-row space-x-0 md:space-x-4">
-        <label class="block flex-1 group relative">
+        <label class="block flex-1 tooltip" data-tooltip="Recommended: 1000–2000 bp for gBlocks">
           <span class="text-gray-700 font-medium">Fragment length:</span>
           <input type="number" id="length" value="1500" min="1" aria-label="Fragment length in bases" class="mt-1 block w-full border border-gray-300 rounded-md p-2 focus:ring-teal-500 focus:border-teal-500">
           <span id="lengthError" class="text-red-600 text-sm hidden">Fragment length must be a positive integer</span>
-          <span class="absolute left-0 top-10 mt-1 hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 z-10">Desired length of each fragment (bases)</span>
         </label>
-        <label class="block flex-1 group relative">
+        <label class="block flex-1 tooltip" data-tooltip="Recommended: 20–50 bp for overlaps">
           <span class="text-gray-700 font-medium">Overlap:</span>
           <input type="number" id="overlap" value="25" min="0" aria-label="Overlap between fragments" class="mt-1 block w-full border border-gray-300 rounded-md p-2 focus:ring-teal-500 focus:border-teal-500">
-          <span id="overlapError" class="text-red-600 text-sm hidden">Overlap must be a non-negative integer</span>
-          <span class="absolute left-0 top-10 mt-1 hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 z-10">Bases shared between adjacent fragments</span>
+          <span id="overlapError" class="text-red-600 text-sm hidden">Overlap must be a non-negative integer and less than fragment length</span>
         </label>
       </div>
       <div class="flex flex-col md:flex-row space-x-0 md:space-x-4">
-        <label class="block flex-1 group relative">
+        <label class="block flex-1 tooltip" data-tooltip="Optional: 20–30 bp for vector homology (A, C, G, T)">
           <span class="text-gray-700 font-medium">5′ Homology sequence to the vector:</span>
           <input type="text" id="fivePrime" placeholder="AAGGAAGTGCCATTCCGCCTGACCT" aria-label="5′ homology sequence" class="mt-1 block w-full border border-gray-300 rounded-md p-2 focus:ring-teal-500 focus:border-teal-500">
-          <span class="absolute left-0 top-10 mt-1 hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 z-10">Sequence added to the 5′ end of the first fragment</span>
+          <span id="fivePrimeError" class="text-red-600 text-sm hidden">Invalid 5′ sequence: use A, C, G, T</span>
         </label>
-        <label class="block flex-1 group relative">
+        <label class="block flex-1 tooltip" data-tooltip="Optional: 20–30 bp for vector homology (A, C, G, T)">
           <span class="text-gray-700 font-medium">3′ Homology sequence to the vector:</span>
           <input type="text" id="threePrime" placeholder="AGGCTAGGTGGAGGCTCAGTGATGA" aria-label="3′ homology sequence" class="mt-1 block w-full border border-gray-300 rounded-md p-2 focus:ring-teal-500 focus:border-teal-500">
-          <span class="absolute left-0 top-10 mt-1 hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 z-10">Sequence added to the 3′ end of the last fragment</span>
+          <span id="threePrimeError" class="text-red-600 text-sm hidden">Invalid 3′ sequence: use A, C, G, T</span>
         </label>
       </div>
-      <label class="block w-full flex items-center group relative">
+      <label class="block w-full flex items-center tooltip" data-tooltip="Optimize overlaps for GC content and avoid repeats">
         <input type="checkbox" id="gcBalance" class="mr-2 h-4 w-4 text-indigo-600 focus:ring-teal-500 border-gray-300 rounded" aria-label="Enforce GC% constraints">
         <span class="text-gray-700 font-medium">Enforce GC% & no 4+ mono/di/tri‐repeats in overlaps</span>
-        <span class="absolute left-0 top-10 mt-1 hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 z-10">Adjust overlaps to meet GC% and avoid long repeats</span>
       </label>
       <div class="flex flex-col md:flex-row space-x-0 md:space-x-4">
-        <label class="block flex-1 group relative">
+        <label class="block flex-1 tooltip" data-tooltip="Recommended: 35–45% for overlaps">
           <span class="text-gray-700 font-medium">Minimum GC%:</span>
           <input type="number" id="gcMin" value="35" min="0" max="100" placeholder="35" aria-label="Minimum GC percentage" class="mt-1 block w-full border border-gray-300 rounded-md p-2 focus:ring-teal-500 focus:border-teal-500">
           <span id="gcMinError" class="text-red-600 text-sm hidden">Minimum GC% must be between 0 and 100</span>
-          <span class="absolute left-0 top-10 mt-1 hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 z-10">Minimum GC content for overlaps (%)</span>
         </label>
-        <label class="block flex-1 group relative">
+        <label class="block flex-1 tooltip" data-tooltip="Recommended: 55–65% for overlaps">
           <span class="text-gray-700 font-medium">Maximum GC%:</span>
           <input type="number" id="gcMax" value="60" min="0" max="100" placeholder="60" aria-label="Maximum GC percentage" class="mt-1 block w-full border border-gray-300 rounded-md p-2 focus:ring-teal-500 focus:border-teal-500">
           <span id="gcMaxError" class="text-red-600 text-sm hidden">Maximum GC% must be between 0 and 100</span>
-          <span class="absolute left-0 top-10 mt-1 hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 z-10">Maximum GC content for overlaps (%)</span>
         </label>
       </div>
-      <label class="block w-full flex items-center group relative">
+      <label class="block w-full flex items-center tooltip" data-tooltip="Show a bar chart of fragment GC% distribution">
         <input type="checkbox" id="showHistogram" class="mr-2 h-4 w-4 text-indigo-600 focus:ring-teal-500 border-gray-300 rounded" aria-label="Show GC% histogram">
         <span class="text-gray-700 font-medium">Show GC% Histogram</span>
-        <span class="absolute left-0 top-10 mt-1 hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 z-10">Display a bar chart of GC% distribution</span>
       </label>
     </div>
     <button id="processBtn" role="button" aria-label="Process FASTA file or sequence" class="w-full bg-indigo-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-teal-600 transition duration-200 disabled:opacity-50">Process</button>
@@ -400,10 +432,11 @@
     <table id="fragTable" class="hidden mb-4">
       <thead>
         <tr class="bg-gray-100">
+          <th class="border p-2">Sequence</th>
           <th class="border p-2">Fragment</th>
           <th class="border p-2">Start</th>
           <th class="border p-2">End</th>
-          <th class="border p-2">Length</th>
+          <th class="border p-2">Length (bp)</th>
           <th class="border p-2">GC%</th>
         </tr>
       </thead>
@@ -412,9 +445,26 @@
     <div id="histogramContainer" class="hidden mb-4">
       <canvas id="gcHistogramCanvas"></canvas>
     </div>
+    <div id="overlapTableContainer" class="hidden mb-4">
+      <h3 class="text-xl font-semibold mb-2">Overlap Details</h3>
+      <table id="overlapTable" class="w-full border-collapse">
+        <thead>
+          <tr class="bg-gray-100">
+            <th class="border p-2">Sequence</th>
+            <th class="border p-2">Overlap</th>
+            <th class="border p-2">Sequence</th>
+            <th class="border p-2">Length (bp)</th>
+            <th class="border p-2">GC%</th>
+            <th class="border p-2">Rec. Temp Range (°C)</th>
+          </tr>
+        </thead>
+        <tbody id="overlapTableBody"></tbody>
+      </table>
+    </div>
     <div class="flex space-x-2 mb-4">
       <button id="downloadBtn" role="button" aria-label="Download FASTA output" class="bg-indigo-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-teal-600 transition duration-200 hidden">Download FASTA</button>
       <button id="copyBtn" role="button" aria-label="Copy FASTA output to clipboard" class="bg-indigo-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-teal-600 transition duration-200 hidden">Copy to Clipboard</button>
+      <button id="downloadCsvBtn" role="button" aria-label="Download overlap table as CSV" class="bg-indigo-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-teal-600 transition duration-200 hidden">Download Overlap CSV</button>
     </div>
     <pre id="outLog" class="border border-gray-200 rounded-md p-4 text-sm"></pre>
   </div>
@@ -437,7 +487,7 @@ function parseFasta(text) {
       if (!entry) continue;
       const lines = entry.split(/[\r\n]+/);
       const headerLine = lines[0].trim();
-      const id = headerLine.split(/\s+/)[0] || "UserInput";
+      const id = headerLine.split(/\s+/)[0] || `Seq${recs.length + 1}`;
       let seq = "";
       if (lines.length > 1) {
         seq = lines.slice(1).join("").replace(/\s/g, "").toUpperCase();
@@ -449,16 +499,16 @@ function parseFasta(text) {
       }
       if (seq && /^[ACGTNacgtn]+$/.test(seq)) {
         recs.push({id, seq});
-        seqLength = seq.length;
+        seqLength += seq.length;
       }
     }
   } else if (/^[ACGTNacgtn]+$/.test(text.replace(/\s/g, ""))) {
     const seq = text.replace(/\s/g, "").toUpperCase();
-    recs.push({id: "UserInput", seq});
+    recs.push({id: "Seq1", seq});
     seqLength = seq.length;
   }
   const seqLengthEl = document.querySelector(document.querySelector('input[name="inputType"]:checked').value === "file" ? "#seqLength" : "#seqLengthSequence");
-  seqLengthEl.textContent = seqLength ? `Sequence length: ${seqLength} bases` : "";
+  seqLengthEl.textContent = seqLength ? `Total sequence length: ${seqLength} bases` : "";
   return recs;
 }
 /**
@@ -471,18 +521,41 @@ function isValidFastaOrSequence(text) {
   }
   return /^[ACGTNacgtn\s]+$/.test(text);
 }
+/**
+ * Validate DNA sequence (A, C, G, T only)
+ */
+function isValidDNA(seq) {
+  return /^[ACGTacgt]+$/.test(seq);
+}
+/**
+ * Calculate GC content
+ */
 function gcContent(s) {
   let gc = 0;
   s = s.toUpperCase();
   for (let c of s) if (c === 'G' || c === 'C') gc++;
   return s.length ? gc / s.length : 0;
 }
+/**
+ * Check for long mono/di/tri-nucleotide repeats
+ */
 function hasBadRepeats(s) {
   s = s.toUpperCase();
   if (/(A|C|G|T)\1{3,}/.test(s)) return true;
   if (/([ACGT]{2})\1{3,}/.test(s)) return true;
   if (/([ACGT]{3})\1{3,}/.test(s)) return true;
   return false;
+}
+/**
+ * Estimate recommended annealing temperature range
+ */
+function estimateTempRange(seq) {
+  const gcPercent = gcContent(seq) * 100;
+  const length = seq.length;
+  const baseTemp = 55 + 0.1 * gcPercent + 0.5 * (length - 25);
+  const minTemp = Math.max(50, Math.round(baseTemp - 2.5));
+  const maxTemp = Math.min(70, Math.round(baseTemp + 2.5));
+  return `${minTemp}–${maxTemp}`;
 }
 /**
  * Slide overlap backward and forward to find GC% in [min, max] and no bad repeats.
@@ -657,42 +730,82 @@ function clearOutput() {
   document.getElementById("outLog").textContent = "";
   document.getElementById("downloadBtn").style.display = "none";
   document.getElementById("copyBtn").style.display = "none";
+  document.getElementById("downloadCsvBtn").style.display = "none";
   document.getElementById("fragTable").classList.add("hidden");
   document.getElementById("fragCount").textContent = "";
   document.getElementById("histogramContainer").classList.add("hidden");
+  document.getElementById("overlapTableContainer").classList.add("hidden");
   const canvas = document.getElementById("gcHistogramCanvas");
   if (canvas) canvas.getContext("2d").clearRect(0, 0, canvas.width, canvas.height);
 }
 /**
- * Draw GC% histogram with animation
+ * Draw GC% histogram with animation and distinct colors per sequence
  */
-function drawHistogram(gcValues) {
+function drawHistogram(gcData) {
+  if (!gcData || !Array.isArray(gcData) || gcData.length === 0 || gcData.every(seq => !seq.fragments || seq.fragments.length === 0)) {
+    console.warn("No valid GC data provided for histogram");
+    document.getElementById("histogramContainer").classList.add("hidden");
+    return;
+  }
   const canvas = document.getElementById("gcHistogramCanvas");
   const ctx = canvas.getContext("2d");
-  // Set canvas dimensions
   canvas.width = canvas.parentElement.offsetWidth * 0.95;
-  canvas.height = 400;
-  // Define margins
-  const margin = { top: 60, right: 30, bottom: 80, left: 60 };
+
+  // Calculate the longest label width
+  ctx.font = "14px Inter"; // Match font used for x-axis labels
+  let maxLabelWidth = 0;
+  gcData.forEach((seq, seqIdx) => {
+    if (seq.fragments) {
+      seq.fragments.forEach((frag, fragIdx) => {
+        const label = `${seq.id}_F${fragIdx + 1}`;
+        const textWidth = ctx.measureText(label).width;
+        maxLabelWidth = Math.max(maxLabelWidth, textWidth);
+      });
+    }
+  });
+  // Since labels are rotated -90 degrees, their width becomes height
+  // Add padding (e.g., 30px for x-axis title, 10px for spacing, 20px buffer)
+  const bottomMargin = maxLabelWidth + 30 + 10 + 20;
+  const margin = { top: 60, right: 30, bottom: bottomMargin, left: 80 };
+  // Set canvas height: plot height + top margin + bottom margin
+  const plotHeight = 400; // Fixed plot height for consistency
+  canvas.height = plotHeight + margin.top + margin.bottom;
+
   const plotWidth = canvas.width - margin.left - margin.right;
-  const plotHeight = canvas.height - margin.top - margin.bottom;
-  // Calculate bar width and spacing
-  const barWidth = Math.min(40, plotWidth / gcValues.length * 0.8);
-  const barSpacing = (plotWidth - barWidth * gcValues.length) / (gcValues.length + 1);
-  // Get GC range for scaling
-  const maxGC = Math.ceil(Math.max(...gcValues.map(v => v * 100)) / 10) * 10 || 100;
-  const minGC = Math.floor(Math.min(...gcValues.map(v => v * 100)) / 10) * 10 || 0;
-  const gcRange = maxGC - minGC;
+  const totalFragments = gcData.reduce((sum, seq) => sum + (seq.fragments ? seq.fragments.length : 0), 0);
+  if (totalFragments === 0) {
+    console.warn("No fragments available to plot in histogram");
+    document.getElementById("histogramContainer").classList.add("hidden");
+    return;
+  }
+  const barWidth = Math.min(40, plotWidth / totalFragments * 0.8);
+  const barSpacing = (plotWidth - barWidth * totalFragments) / (totalFragments + 1);
+  const gcValues = gcData.flatMap(seq => seq.fragments ? seq.fragments.map(f => f.gc * 100) : []);
+  const maxGC = gcValues.length > 0 ? Math.ceil(Math.max(...gcValues) / 10) * 10 : 100;
+  const minGC = gcValues.length > 0 ? Math.floor(Math.min(...gcValues) / 10) * 10 : 0;
+  const gcRange = maxGC - minGC || 100;
   const barHeightScale = plotHeight / gcRange;
-  // Animation setup
+  // Define colors for each sequence
+  const colors = [
+    "rgba(20,184,166,0.9)", // Teal for Seq1
+    "rgba(249,115,22,0.9)", // Orange for Seq2
+    "rgba(59,130,246,0.9)", // Blue for Seq3
+    "rgba(147,51,234,0.9)", // Purple for Seq4
+    "rgba(239,68,68,0.9)"  // Red for Seq5
+  ];
+  const hoverColors = [
+    "rgba(13,148,136,0.9)", // Teal hover
+    "rgba(194,65,12,0.9)", // Orange hover
+    "rgba(29,78,216,0.9)", // Blue hover
+    "rgba(126,34,206,0.9)", // Purple hover
+    "rgba(220,38,38,0.9)"  // Red hover
+  ];
   let animationProgress = 0;
-  const animationDuration = 500; // ms
+  const animationDuration = 500;
   const draw = (progress, hoverIndex = -1) => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    // Draw background
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    // Draw grid lines
     ctx.strokeStyle = `var(--histogram-grid)`;
     ctx.lineWidth = 0.5;
     for (let gc = minGC; gc <= maxGC; gc += 10) {
@@ -702,7 +815,6 @@ function drawHistogram(gcValues) {
       ctx.lineTo(margin.left + plotWidth, y);
       ctx.stroke();
     }
-    // Draw axes
     ctx.beginPath();
     ctx.moveTo(margin.left, margin.top);
     ctx.lineTo(margin.left, margin.top + plotHeight);
@@ -710,7 +822,6 @@ function drawHistogram(gcValues) {
     ctx.strokeStyle = "#000000";
     ctx.lineWidth = 1;
     ctx.stroke();
-    // Draw y-axis labels
     ctx.font = "14px Inter";
     ctx.fillStyle = "#000000";
     ctx.textAlign = "right";
@@ -719,53 +830,77 @@ function drawHistogram(gcValues) {
       const y = margin.top + plotHeight - ((gc - minGC) * barHeightScale);
       ctx.fillText(`${gc}%`, margin.left - 15, y);
     }
-    // Draw x-axis labels
+    // Draw x-axis labels with -90 degree tilt
+    let barIndex = 0;
+    gcData.forEach((seq, seqIdx) => {
+      if (seq.fragments) {
+        seq.fragments.forEach((frag, fragIdx) => {
+          const label = `${seq.id}_F${fragIdx + 1}`;
+          const x = margin.left + barSpacing * (barIndex + 1) + barWidth * barIndex + barWidth / 2;
+          const y = margin.top + plotHeight + 10; // Base y for rotation
+          ctx.save();
+          ctx.translate(x, y);
+          ctx.rotate(-Math.PI / 4); // Tilt -90 degrees
+          ctx.textAlign = "right";
+          ctx.textBaseline = "top";
+          ctx.fillText(label, 0, 0);
+          ctx.restore();
+          barIndex++;
+        });
+      }
+    });
+    // Draw x-axis title
+    ctx.font = "16px Inter";
     ctx.textAlign = "center";
     ctx.textBaseline = "top";
-    gcValues.forEach((gc, i) => {
-      const x = margin.left + barSpacing * (i + 1) + barWidth * i + barWidth / 2;
-      ctx.fillText(`Frag ${i + 1}`, x, margin.top + plotHeight + 20);
-    });
-    // Draw bars with animation
-    gcValues.forEach((gc, i) => {
-      const height = (gc * 100 - minGC) * barHeightScale * progress;
-      const x = margin.left + barSpacing * (i + 1) + barWidth * i;
-      const y = margin.top + plotHeight - height;
-      ctx.fillStyle = i === hoverIndex ? "rgba(13,148,136,0.9)" : "rgba(20,184,166,0.9)";
-      ctx.shadowColor = "rgba(0,0,0,0.2)";
-      ctx.shadowBlur = i === hoverIndex ? 6 : 4;
-      ctx.beginPath();
-      ctx.moveTo(x + 6, y);
-      ctx.arcTo(x, y, x, y + 6, 6);
-      ctx.lineTo(x, y + height - 6);
-      ctx.arcTo(x, y + height, x + 6, y + height, 6);
-      ctx.lineTo(x + barWidth - 6, y + height);
-      ctx.arcTo(x + barWidth, y + height, x + barWidth, y + height - 6, 6);
-      ctx.lineTo(x + barWidth, y + 6);
-      ctx.arcTo(x + barWidth, y, x + barWidth - 6, y, 6);
-      ctx.closePath();
-      ctx.fill();
-      ctx.shadowBlur = 0;
-      // Draw GC% label (always black)
-      ctx.fillStyle = "#000000";
-      ctx.fillText(`${(gc * 100).toFixed(1)}%`, x + barWidth / 2, y - 20);
-    });
-    // Draw title
+    ctx.fillText("Fragments", canvas.width / 2, margin.top + plotHeight + maxLabelWidth + 20);
+    // Draw y-axis title
+    ctx.font = "16px Inter";
+    ctx.fillStyle = "#000000";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.save();
+    ctx.translate(margin.left / 2 - 20, margin.top + plotHeight / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText("GC Content (%)", 0, 0);
+    ctx.restore();
+    // Draw main title
     ctx.font = "20px Inter";
     ctx.fillStyle = "#000000";
     ctx.textAlign = "center";
     ctx.textBaseline = "top";
     ctx.fillText("GC Content Distribution", canvas.width / 2, margin.top / 2 - 20);
-    // Draw axis labels
-    ctx.font = "16px Inter";
-    ctx.fillText("Fragment", canvas.width / 2, canvas.height - 25);
-    ctx.save();
-    ctx.translate(margin.left / 2 - 20, canvas.height / 2);
-    ctx.rotate(-Math.PI / 2);
-    ctx.fillText("GC Content (%)", 0, 0);
-    ctx.restore();
+    // Draw bars
+    barIndex = 0;
+    gcData.forEach((seq, seqIdx) => {
+      if (seq.fragments) {
+        seq.fragments.forEach((frag, fragIdx) => {
+          const height = (frag.gc * 100 - minGC) * barHeightScale * progress;
+          const x = margin.left + barSpacing * (barIndex + 1) + barWidth * barIndex;
+          const y = margin.top + plotHeight - height;
+          ctx.fillStyle = barIndex === hoverIndex ? hoverColors[seqIdx % hoverColors.length] : colors[seqIdx % colors.length];
+          ctx.shadowColor = "rgba(0,0,0,0.2)";
+          ctx.shadowBlur = barIndex === hoverIndex ? 6 : 4;
+          ctx.beginPath();
+          ctx.moveTo(x + 6, y);
+          ctx.arcTo(x, y, x, y + 6, 6);
+          ctx.lineTo(x, y + height - 6);
+          ctx.arcTo(x, y + height, x + 6, y + height, 6);
+          ctx.lineTo(x + barWidth - 6, y + height);
+          ctx.arcTo(x + barWidth, y + height, x + barWidth, y + height - 6, 6);
+          ctx.lineTo(x + barWidth, y + 6);
+          ctx.arcTo(x + barWidth, y, x + barWidth - 6, y, 6);
+          ctx.closePath();
+          ctx.fill();
+          ctx.shadowBlur = 0;
+          ctx.font = "12px Inter";
+          ctx.fillStyle = "#000000";
+          ctx.fillText(`${(frag.gc * 100).toFixed(1)}%`, x + barWidth / 2, y - 20);
+          barIndex++;
+        });
+      }
+    });
   };
-  // Animation loop
   const startTime = performance.now();
   const animate = (time) => {
     animationProgress = Math.min((time - startTime) / animationDuration, 1);
@@ -775,22 +910,25 @@ function drawHistogram(gcValues) {
     }
   };
   requestAnimationFrame(animate);
-  // Hover effect
   canvas.onmousemove = (e) => {
     const rect = canvas.getBoundingClientRect();
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
     let hoverIndex = -1;
-    gcValues.forEach((gc, i) => {
-      const x = margin.left + barSpacing * (i + 1) + barWidth * i;
-      const height = (gc * 100 - minGC) * barHeightScale;
-      const y = margin.top + plotHeight - height;
-      // Check if mouse is within bar bounds
-      if (mouseX >= x && mouseX <= x + barWidth && mouseY >= y && mouseY <= margin.top + plotHeight) {
-        hoverIndex = i;
+    let barIndex = 0;
+    gcData.forEach(seq => {
+      if (seq.fragments) {
+        seq.fragments.forEach((frag) => {
+          const x = margin.left + barSpacing * (barIndex + 1) + barWidth * barIndex;
+          const height = (frag.gc * 100 - minGC) * barHeightScale;
+          const y = margin.top + plotHeight - height;
+          if (mouseX >= x && mouseX <= x + barWidth && mouseY >= y && mouseY <= margin.top + plotHeight) {
+            hoverIndex = barIndex;
+          }
+          barIndex++;
+        });
       }
     });
-    // Redraw with hover
     draw(1, hoverIndex);
     canvas.style.cursor = hoverIndex >= 0 ? "pointer" : "default";
   };
@@ -798,35 +936,59 @@ function drawHistogram(gcValues) {
     draw(1);
     canvas.style.cursor = "default";
   };
-  console.log("Histogram drawn with GC values:", gcValues.map(v => (v * 100).toFixed(1) + "%"));
+  console.log("Histogram drawn with GC values:", gcData.map(seq => ({
+    id: seq.id,
+    fragments: seq.fragments ? seq.fragments.map(f => (f.gc * 100).toFixed(1) + "%") : []
+  })));
+}
+/**
+ * Clear input error styles
+ */
+function clearInputErrors() {
+  const inputs = ["fastaFile", "sequenceInput", "length", "overlap", "fivePrime", "threePrime", "gcMin", "gcMax"];
+  inputs.forEach(id => {
+    const el = document.getElementById(id);
+    el.classList.remove("input-error");
+  });
+  const errors = ["fastaFileError", "fastaFormatError", "sequenceError", "lengthError", "overlapError", "fivePrimeError", "threePrimeError", "gcMinError", "gcMaxError"];
+  errors.forEach(id => document.getElementById(id).classList.add("hidden"));
+}
+/**
+ * Toggle GC input fields based on gcBalance checkbox
+ */
+function toggleGCFields() {
+  const checkbox = document.getElementById("gcBalance");
+  const gcMinLabel = document.getElementById("gcMin").parentElement;
+  const gcMaxLabel = document.getElementById("gcMax").parentElement;
+  const gcMinInput = document.getElementById("gcMin");
+  const gcMaxInput = document.getElementById("gcMax");
+  if (checkbox.checked) {
+    gcMinLabel.style.display = "block";
+    gcMaxLabel.style.display = "block";
+    gcMinInput.disabled = false;
+    gcMaxInput.disabled = false;
+  } else {
+    gcMinLabel.style.display = "none";
+    gcMaxLabel.style.display = "none";
+    gcMinInput.disabled = true;
+    gcMaxInput.disabled = true;
+  }
 }
 document.getElementById("processBtn").onclick = async () => {
   const btn = document.getElementById("processBtn");
   btn.disabled = true;
   btn.textContent = "Processing...";
   document.getElementById("progress").classList.remove("hidden");
-  const fastaError = document.getElementById("fastaFileError");
-  const fastaFormatError = document.getElementById("fastaFormatError");
-  const sequenceError = document.getElementById("sequenceError");
-  const lengthError = document.getElementById("lengthError");
-  const overlapError = document.getElementById("overlapError");
-  const gcMinError = document.getElementById("gcMinError");
-  const gcMaxError = document.getElementById("gcMaxError");
-  // Reset errors
-  fastaError.classList.add("hidden");
-  fastaFormatError.classList.add("hidden");
-  sequenceError.classList.add("hidden");
-  lengthError.classList.add("hidden");
-  overlapError.classList.add("hidden");
-  gcMinError.classList.add("hidden");
-  gcMaxError.classList.add("hidden");
+  clearOutput();
+  clearInputErrors();
   const inputType = document.querySelector('input[name="inputType"]:checked').value;
   let text = "";
   let file = null;
   if (inputType === "file") {
     file = document.getElementById("fastaFile").files[0];
     if (!file) {
-      fastaError.classList.remove("hidden");
+      document.getElementById("fastaFileError").classList.remove("hidden");
+      document.getElementById("fastaFile").classList.add("input-error");
       btn.disabled = false;
       btn.textContent = "Process";
       document.getElementById("progress").classList.add("hidden");
@@ -834,7 +996,8 @@ document.getElementById("processBtn").onclick = async () => {
     }
     text = await file.text();
     if (!isValidFastaOrSequence(text)) {
-      fastaFormatError.classList.remove("hidden");
+      document.getElementById("fastaFormatError").classList.remove("hidden");
+      document.getElementById("fastaFile").classList.add("input-error");
       btn.disabled = false;
       btn.textContent = "Process";
       document.getElementById("progress").classList.add("hidden");
@@ -843,7 +1006,8 @@ document.getElementById("processBtn").onclick = async () => {
   } else {
     text = document.getElementById("sequenceInput").value.trim();
     if (!text || !isValidFastaOrSequence(text)) {
-      sequenceError.classList.remove("hidden");
+      document.getElementById("sequenceError").classList.remove("hidden");
+      document.getElementById("sequenceInput").classList.add("input-error");
       btn.disabled = false;
       btn.textContent = "Process";
       document.getElementById("progress").classList.add("hidden");
@@ -860,14 +1024,33 @@ document.getElementById("processBtn").onclick = async () => {
   const showHistogram = document.getElementById("showHistogram").checked;
   // Validate inputs
   if (isNaN(L) || L < 1) {
-    lengthError.classList.remove("hidden");
+    document.getElementById("lengthError").classList.remove("hidden");
+    document.getElementById("length").classList.add("input-error");
     btn.disabled = false;
     btn.textContent = "Process";
     document.getElementById("progress").classList.add("hidden");
     return;
   }
-  if (isNaN(O) || O < 0) {
-    overlapError.classList.remove("hidden");
+  if (isNaN(O) || O < 0 || O >= L) {
+    document.getElementById("overlapError").textContent = O >= L ? "Overlap must be less than fragment length" : "Overlap must be a non-negative integer";
+    document.getElementById("overlapError").classList.remove("hidden");
+    document.getElementById("overlap").classList.add("input-error");
+    btn.disabled = false;
+    btn.textContent = "Process";
+    document.getElementById("progress").classList.add("hidden");
+    return;
+  }
+  if (five && !isValidDNA(five)) {
+    document.getElementById("fivePrimeError").classList.remove("hidden");
+    document.getElementById("fivePrime").classList.add("input-error");
+    btn.disabled = false;
+    btn.textContent = "Process";
+    document.getElementById("progress").classList.add("hidden");
+    return;
+  }
+  if (three && !isValidDNA(three)) {
+    document.getElementById("threePrimeError").classList.remove("hidden");
+    document.getElementById("threePrime").classList.add("input-error");
     btn.disabled = false;
     btn.textContent = "Process";
     document.getElementById("progress").classList.add("hidden");
@@ -875,22 +1058,25 @@ document.getElementById("processBtn").onclick = async () => {
   }
   if (doGC) {
     if (isNaN(gcMin) || gcMin < 0 || gcMin > 1) {
-      gcMinError.classList.remove("hidden");
+      document.getElementById("gcMinError").classList.remove("hidden");
+      document.getElementById("gcMin").classList.add("input-error");
       btn.disabled = false;
       btn.textContent = "Process";
       document.getElementById("progress").classList.add("hidden");
       return;
     }
     if (isNaN(gcMax) || gcMax < 0 || gcMax > 1) {
-      gcMaxError.classList.remove("hidden");
+      document.getElementById("gcMaxError").classList.remove("hidden");
+      document.getElementById("gcMax").classList.add("input-error");
       btn.disabled = false;
       btn.textContent = "Process";
       document.getElementById("progress").classList.add("hidden");
       return;
     }
     if (gcMin > gcMax) {
-      gcMaxError.textContent = "Minimum GC% must be less than or equal to Maximum GC%";
-      gcMaxError.classList.remove("hidden");
+      document.getElementById("gcMaxError").textContent = "Minimum GC% must be less than or equal to Maximum GC%";
+      document.getElementById("gcMaxError").classList.remove("hidden");
+      document.getElementById("gcMax").classList.add("input-error");
       btn.disabled = false;
       btn.textContent = "Process";
       document.getElementById("progress").classList.add("hidden");
@@ -899,8 +1085,9 @@ document.getElementById("processBtn").onclick = async () => {
   }
   const records = parseFasta(text);
   if (records.length === 0) {
-    sequenceError.classList.remove("hidden");
-    sequenceError.textContent = "No valid sequences found";
+    document.getElementById("sequenceError").textContent = "No valid sequences found";
+    document.getElementById("sequenceError").classList.remove("hidden");
+    document.getElementById(inputType === "file" ? "fastaFile" : "sequenceInput").classList.add("input-error");
     btn.disabled = false;
     btn.textContent = "Process";
     document.getElementById("progress").classList.add("hidden");
@@ -909,10 +1096,13 @@ document.getElementById("processBtn").onclick = async () => {
   window.GC_MIN = doGC ? gcMin : 0.35;
   window.GC_MAX = doGC ? gcMax : 0.60;
   let out = "";
+  let csvContent = "Sequence,Overlap,Sequence,Length (bp),GC%,Rec. Temp Range (°C)\n";
+  let allFrags = [];
+  let gcData = [];
+  let totalFragments = 0;
   for (let rec of records) {
     let frags = fragmentSequence(rec.seq, L, O, five, three);
     if (doGC) {
-      // First GC pass
       for (let j = 0; j < frags.length - 1; j++) {
         const cur = frags[j], nxt = frags[j+1];
         const ideal = cur.end - O;
@@ -927,17 +1117,16 @@ document.getElementById("processBtn").onclick = async () => {
           frags[k].end = Math.min(frags[k].start + L, rec.seq.length);
         }
         if (nxt.end - nxt.start < O && j + 1 < frags.length - 1) {
-          console.warn(`Fragment ${j+2} too short (${nxt.end - nxt.start} bases); adjusting...`);
+          console.warn(`Fragment ${j+2} too short (${nxt.end - nxt.start} bases) in sequence ${rec.id}; adjusting...`);
           nxt.end = Math.min(nxt.start + L, rec.seq.length);
         }
         const overlapSeq = rec.seq.slice(best, best + O);
         const gc = gcContent(overlapSeq);
         if (gc < window.GC_MIN || gc > window.GC_MAX || hasBadRepeats(overlapSeq)) {
-          console.warn(`Overlap ${j+1} at ${best}-${best+O} has GC ${(gc*100).toFixed(2)}% or bad repeats: ${overlapSeq}`);
+          console.warn(`Overlap ${j+1} at ${best}-${best+O} in sequence ${rec.id} has GC ${(gc*100).toFixed(2)}% or bad repeats: ${overlapSeq}`);
         }
       }
       frags = resplitFragments(frags, L, O, rec.seq.length);
-      // Second GC pass
       for (let j = 0; j < frags.length - 1; j++) {
         const cur = frags[j], nxt = frags[j+1];
         const ideal = cur.end - O;
@@ -950,7 +1139,7 @@ document.getElementById("processBtn").onclick = async () => {
         const overlapSeq = rec.seq.slice(best, best + O);
         const gc = gcContent(overlapSeq);
         if (gc < window.GC_MIN || gc > window.GC_MAX || hasBadRepeats(overlapSeq)) {
-          console.warn(`Overlap ${j+1} at ${best}-${best+O} has GC ${(gc*100).toFixed(2)}% or bad repeats: ${overlapSeq}`);
+          console.warn(`Overlap ${j+1} at ${best}-${best+O} in sequence ${rec.id} has GC ${(gc*100).toFixed(2)}% or bad repeats: ${overlapSeq}`);
         }
       }
       frags = resplitFragments(frags, L, O, rec.seq.length);
@@ -959,30 +1148,34 @@ document.getElementById("processBtn").onclick = async () => {
       if (i === 0 || i === frags.length - 1) return true;
       const len = frag.end - frag.start;
       if (len < O) {
-        console.warn(`Removing fragment ${i+1} with length ${len} (less than overlap ${O})`);
+        console.warn(`Removing fragment ${i+1} with length ${len} (less than overlap ${O}) in sequence ${rec.id}`);
         return false;
       }
       return true;
     });
-    // Populate fragment table
-    const tableBody = document.getElementById("fragTableBody");
-    tableBody.innerHTML = "";
-    const gcValues = [];
+    const seqGcData = { id: rec.id, fragments: [] };
     frags.forEach((frag, i) => {
-      const gc = doGC ? (gcContent(rec.seq.slice(frag.start, frag.end)) * 100).toFixed(2) : "N/A";
-      gcValues.push(doGC ? gcContent(rec.seq.slice(frag.start, frag.end)) : 0);
-      tableBody.insertAdjacentHTML("beforeend", `<tr><td class="border p-2">${rec.id}_${frag.start+1}_${frag.end}</td><td class="border p-2">${frag.start+1}</td><td class="border p-2">${frag.end}</td><td class="border p-2">${frag.end - frag.start}</td><td class="border p-2">${gc}</td></tr>`);
+      const gc = gcContent(rec.seq.slice(frag.start, frag.end));
+      allFrags.push({ seqId: rec.id, fragId: `F${i+1}_${frag.start+1}_${frag.end}`, start: frag.start + 1, end: frag.end, length: frag.end - frag.start, gc });
+      seqGcData.fragments.push({ gc, fragId: i + 1 });
     });
-    document.getElementById("fragTable").classList.remove("hidden");
-    document.getElementById("fragCount").textContent = `Generated ${frags.length} fragments`;
-    // Show histogram if requested and GC balancing is enabled
-    if (showHistogram && doGC) {
-      document.getElementById("histogramContainer").classList.remove("hidden");
-      drawHistogram(gcValues);
-    } else {
-      document.getElementById("histogramContainer").classList.add("hidden");
+    if (seqGcData.fragments.length > 0) {
+      gcData.push(seqGcData);
     }
-    // Output fragments
+    totalFragments += frags.length;
+    if (frags.length > 1) {
+      for (let i = 0; i < frags.length - 1; i++) {
+        const cur = frags[i];
+        const next = frags[i + 1];
+        const overlapStart = next.start;
+        const overlapEnd = cur.end;
+        const overlapSeq = rec.seq.slice(overlapStart, overlapEnd);
+        const overlapLength = overlapEnd - overlapStart;
+        const gcPercent = (gcContent(overlapSeq) * 100).toFixed(2);
+        const tempRange = estimateTempRange(overlapSeq);
+        csvContent += `${rec.id},Overlap ${i + 1},${overlapSeq},${overlapLength},${gcPercent},${tempRange}\n`;
+      }
+    }
     for (let i = 0; i < frags.length; i++) {
       let {start, end} = frags[i];
       let seqFrag = rec.seq.slice(start, end);
@@ -994,23 +1187,86 @@ document.getElementById("processBtn").onclick = async () => {
       }
     }
   }
+  const tableBody = document.getElementById("fragTableBody");
+  tableBody.innerHTML = "";
+  allFrags.forEach(frag => {
+    const gcDisplay = frag.gc ? (frag.gc * 100).toFixed(2) : "N/A";
+    tableBody.insertAdjacentHTML("beforeend", `<tr><td class="border p-2">${frag.seqId}</td><td class="border p-2">${frag.fragId}</td><td class="border p-2">${frag.start}</td><td class="border p-2">${frag.end}</td><td class="border p-2">${frag.length}</td><td class="border p-2">${gcDisplay}</td></tr>`);
+  });
+  document.getElementById("fragTable").classList.remove("hidden");
+  document.getElementById("fragCount").textContent = `Generated ${totalFragments} fragments across ${records.length} sequences`;
+  const overlapTableBody = document.getElementById("overlapTableBody");
+  overlapTableBody.innerHTML = "";
+  if (allFrags.length > records.length) {
+    document.getElementById("overlapTableContainer").classList.remove("hidden");
+    for (let rec of records) {
+      const frags = allFrags.filter(f => f.seqId === rec.id);
+      for (let i = 0; i < frags.length - 1; i++) {
+        const cur = frags[i];
+        const next = frags[i + 1];
+        const overlapStart = next.start - 1;
+        const overlapEnd = cur.end;
+        const overlapSeq = rec.seq.slice(overlapStart, overlapEnd);
+        const overlapLength = overlapEnd - overlapStart;
+        const gcPercent = (gcContent(overlapSeq) * 100).toFixed(2);
+        const tempRange = estimateTempRange(overlapSeq);
+        overlapTableBody.insertAdjacentHTML("beforeend", `<tr><td class="border p-2">${rec.id}</td><td class="border p-2">Overlap ${i + 1}</td><td class="border p-2 font-mono text-sm">${overlapSeq}</td><td class="border p-2">${overlapLength}</td><td class="border p-2">${gcPercent}</td><td class="border p-2">${tempRange}</td></tr>`);
+      }
+    }
+  } else {
+    document.getElementById("overlapTableContainer").classList.add("hidden");
+  }
+  if (showHistogram && doGC && gcData.length > 0 && gcData.some(seq => seq.fragments.length > 0)) {
+    document.getElementById("histogramContainer").classList.remove("hidden");
+    drawHistogram(gcData);
+  } else {
+    document.getElementById("histogramContainer").classList.add("hidden");
+  }
   document.getElementById("outLog").textContent = out;
-  const blob = new Blob([out], {type: 'text/plain'});
-  const url = URL.createObjectURL(blob);
+  const fastaBlob = new Blob([out], {type: 'text/plain'});
+  const fastaUrl = URL.createObjectURL(fastaBlob);
+  const csvBlob = new Blob([csvContent], {type: 'text/csv'});
+  const csvUrl = URL.createObjectURL(csvBlob);
   const downloadBtn = document.getElementById("downloadBtn");
   const copyBtn = document.getElementById("copyBtn");
+  const downloadCsvBtn = document.getElementById("downloadCsvBtn");
   downloadBtn.style.display = 'inline-block';
   copyBtn.style.display = 'inline-block';
+  downloadCsvBtn.style.display = allFrags.length > records.length ? 'inline-block' : 'none';
   downloadBtn.onclick = () => {
-    const prefix = prompt("Enter a prefix for the downloaded file (optional):", "user_input");
-    const filePrefix = prefix ? prefix : "user_input";
+    const inputType = document.querySelector('input[name="inputType"]:checked').value;
+    let filePrefix = "user_input";
+    if (inputType === "file") {
+      const file = document.getElementById("fastaFile").files[0];
+      if (file) {
+        filePrefix = file.name.split('.').slice(0, -1).join('.');
+      }
+    }
+    const prefix = prompt("Enter a prefix for the FASTA file (optional):", filePrefix);
+    const finalPrefix = prefix ? prefix : filePrefix;
     const a = document.createElement('a');
-    a.href = url;
-    a.download = `${filePrefix}_fragments.fa`;
+    a.href = fastaUrl;
+    a.download = `${finalPrefix}_fragments.fa`;
     a.click();
   };
   copyBtn.onclick = () => {
-    navigator.clipboard.writeText(out).then(() => alert("Output copied to clipboard!"));
+    navigator.clipboard.writeText(out).then(() => alert("FASTA output copied to clipboard!"));
+  };
+  downloadCsvBtn.onclick = () => {
+    const inputType = document.querySelector('input[name="inputType"]:checked').value;
+    let filePrefix = "user_input";
+    if (inputType === "file") {
+      const file = document.getElementById("fastaFile").files[0];
+      if (file) {
+        filePrefix = file.name.split('.').slice(0, -1).join('.');
+      }
+    }
+    const prefix = prompt("Enter a prefix for the CSV file (optional):", filePrefix);
+    const finalPrefix = prefix ? prefix : filePrefix;
+    const a = document.createElement('a');
+    a.href = csvUrl;
+    a.download = `${finalPrefix}_overlaps.csv`;
+    a.click();
   };
   btn.disabled = false;
   btn.textContent = "Process";
@@ -1054,26 +1310,7 @@ inputTypeRadios.forEach(radio => {
   radio.addEventListener("change", toggleInputFields);
 });
 toggleInputFields();
-const checkbox = document.getElementById("gcBalance");
-const gcMinLabel = document.getElementById("gcMin").parentElement;
-const gcMaxLabel = document.getElementById("gcMax").parentElement;
-const gcMinInput = document.getElementById("gcMin");
-const gcMaxInput = document.getElementById("gcMax");
-function toggleGCFields() {
-  if (checkbox.checked) {
-    gcMinLabel.style.display = "block";
-    gcMaxLabel.style.display = "block";
-    gcMinInput.disabled = false;
-    gcMaxInput.disabled = false;
-  } else {
-    gcMinLabel.style.display = "none";
-    gcMaxLabel.style.display = "none";
-    gcMinInput.disabled = true;
-    gcMaxInput.disabled = true;
-  }
-}
-toggleGCFields();
-checkbox.addEventListener("change", () => {
+document.getElementById("gcBalance").addEventListener("change", () => {
   toggleGCFields();
   saveInputs();
 });
