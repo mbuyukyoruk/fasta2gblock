@@ -480,24 +480,6 @@
     <span id="fragCount" class="text-gray-500 text-sm block mb-2"></span>
     <div class="table-container">
       <table id="fragTable" class="hidden mb-4">
-<!--      <thead>-->
-<!--        <tr class="bg-gray-100">-->
-<!--          <th class="border p-2">Sequence</th>-->
-<!--          <th class="border p-2">Fragment</th>-->
-<!--          <th class="border p-2">Start</th>-->
-<!--          <th class="border p-2">End</th>-->
-<!--          <th class="border p-2">Length (bp)</th>-->
-<!--          <th class="border p-2">GC%</th>-->
-<!--        </tr>-->
-<!--      </thead>-->
-<!--      <tbody id="fragTableBody"></tbody>-->
-<!--    </table>-->
-<!--    <div id="histogramContainer" class="hidden mb-4">-->
-<!--      <canvas id="gcHistogramCanvas"></canvas>-->
-<!--    </div>-->
-<!--    <div id="overlapTableContainer" class="hidden mb-4">-->
-<!--      <h3 class="text-xl font-semibold mb-2">Overlap Details</h3>-->
-<!--      <table id="overlapTable" class="w-full border-collapse">-->
         <thead>
           <tr class="bg-gray-100">
             <th class="border p-2">Sequence</th>
@@ -510,14 +492,15 @@
         </thead>
         <tbody id="fragTableBody"></tbody>
       </table>
-      </div>
+    </div>
     <div id="histogramContainer" class="hidden mb-4">
       <canvas id="gcHistogramCanvas"></canvas>
     </div>
     <div class="table-container">
-      <div id="overlapTableContainer" class="hidden mb-4">
-        <h3 class="text-xl font-semibold mb-2">Overlap Details</h3>
-        <table id="overlapTable" class="w-full border-collapse">
+<!--      <div id="overlapTableContainer" class="hidden mb-4">-->
+<!--        <h3 class="text-xl font-semibold mb-2">Overlap Details</h3>-->
+<!--        <table id="overlapTable" class="w-full border-collapse">-->
+        <table id="overlapTableContainer" class="hidden mb-4">
           <thead>
             <tr class="bg-gray-100">
               <th class="border p-2">Sequence</th>
@@ -530,7 +513,7 @@
           </thead>
           <tbody id="overlapTableBody"></tbody>
         </table>
-      </div>
+<!--      </div>-->
     </div>
     <div class="flex space-x-2 mb-4">
       <button id="downloadBtn" role="button" aria-label="Download FASTA output" class="bg-indigo-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-teal-600 transition duration-200 hidden">Download FASTA</button>
@@ -1308,7 +1291,7 @@ document.getElementById("processBtn").onclick = async () => {
         const overlapLength = overlapEnd - overlapStart;
         const gcPercent = (gcContent(overlapSeq) * 100).toFixed(2);
         const tempRange = estimateTempRange(overlapSeq);
-        overlapTableBody.insertAdjacentHTML("beforeend", `<tr><td class="border p-2">${rec.id}</td><td class="border p-2">Overlap ${i + 1}</td><td class="border p-2 font-mono text-sm">${overlapSeq}</td><td class="border p-2">${overlapLength}</td><td class="border p-2">${gcPercent}</td><td class="border p-2">${tempRange}</td></tr>`);
+        overlapTableBody.insertAdjacentHTML("beforeend", `<tr><td class="border p-2">${rec.id}</td><td class="border p-2">Overlap ${i + 1}</td><td class="border p-2 font-mono text-sm break-words whitespace-normal max-w-xs">${overlapSeq}</td><td class="border p-2">${overlapLength}</td><td class="border p-2">${gcPercent}</td><td class="border p-2">${tempRange}</td></tr>`);
       }
     }
   } else {
