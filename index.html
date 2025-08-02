@@ -104,14 +104,27 @@
       text-align: center;
       padding: 1rem 0;
     }
+        /* Updated table styles */
+    .table-container {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+      margin-bottom: 1.5rem;
+    }
     table {
       width: 100%;
       border-collapse: collapse;
+      font-size: 0.95rem; /* Slightly smaller font for tables */
     }
     th, td {
       border: 1px solid #e5e7eb;
-      padding: 8px;
+      padding: 6px;
       text-align: left;
+       white-space: nowrap; /* Prevent text wrapping */
+    }
+    th {
+      background-color: #f3f4f6;
+      font-weight: 600;
     }
     tr:nth-child(even) {
       background-color: #f9fafb;
@@ -129,7 +142,36 @@
       border-color: #4b5563;
     }
     [data-theme="dark"] th {
-      color: #000000;
+      background-color: #2d3748;
+      color: #e5e7eb;
+    }
+    /* Sequence column specific styling */
+    td.font-mono {
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 0.85rem;
+      max-width: 150px; /* Limit width to avoid excessive stretching */
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    /* Mobile-specific styles */
+    @media (max-width: 640px) {
+      table {
+        font-size: 0.8rem; /* Smaller font on mobile */
+      }
+      th, td {
+        padding: 4px; /* Further reduced padding */
+      }
+      td.font-mono {
+        font-size: 0.75rem;
+        max-width: 100px; /* Tighter max-width on mobile */
+      }
+      .table-container {
+        padding-right: 0;
+        padding-left: 0;
+      }
+      #histogramContainer {
+        padding: 1rem; /* Reduced padding on mobile */
+      }
     }
     .text-gray-600 {
       color: var(--text-gray-600);
@@ -259,6 +301,12 @@
       font-size: 12px;
       white-space: nowrap;
       z-index: 10;
+      }
+    @media (max-width: 640px) {
+      .tooltip:hover:after {
+        white-space: normal; /* Allow wrapping for tooltips on mobile */
+        max-width: 200px; /* Limit tooltip width */
+      }
     }
   </style>
 </head>
@@ -430,37 +478,59 @@
     <h2 class="text-2xl font-semibold mt-6 mb-4">Output</h2>
     <div id="progress" class="hidden text-center mb-4"><div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-teal-600"></div></div>
     <span id="fragCount" class="text-gray-500 text-sm block mb-2"></span>
-    <table id="fragTable" class="hidden mb-4">
-      <thead>
-        <tr class="bg-gray-100">
-          <th class="border p-2">Sequence</th>
-          <th class="border p-2">Fragment</th>
-          <th class="border p-2">Start</th>
-          <th class="border p-2">End</th>
-          <th class="border p-2">Length (bp)</th>
-          <th class="border p-2">GC%</th>
-        </tr>
-      </thead>
-      <tbody id="fragTableBody"></tbody>
-    </table>
-    <div id="histogramContainer" class="hidden mb-4">
-      <canvas id="gcHistogramCanvas"></canvas>
-    </div>
-    <div id="overlapTableContainer" class="hidden mb-4">
-      <h3 class="text-xl font-semibold mb-2">Overlap Details</h3>
-      <table id="overlapTable" class="w-full border-collapse">
+    <div class="table-container">
+      <table id="fragTable" class="hidden mb-4">
+<!--      <thead>-->
+<!--        <tr class="bg-gray-100">-->
+<!--          <th class="border p-2">Sequence</th>-->
+<!--          <th class="border p-2">Fragment</th>-->
+<!--          <th class="border p-2">Start</th>-->
+<!--          <th class="border p-2">End</th>-->
+<!--          <th class="border p-2">Length (bp)</th>-->
+<!--          <th class="border p-2">GC%</th>-->
+<!--        </tr>-->
+<!--      </thead>-->
+<!--      <tbody id="fragTableBody"></tbody>-->
+<!--    </table>-->
+<!--    <div id="histogramContainer" class="hidden mb-4">-->
+<!--      <canvas id="gcHistogramCanvas"></canvas>-->
+<!--    </div>-->
+<!--    <div id="overlapTableContainer" class="hidden mb-4">-->
+<!--      <h3 class="text-xl font-semibold mb-2">Overlap Details</h3>-->
+<!--      <table id="overlapTable" class="w-full border-collapse">-->
         <thead>
           <tr class="bg-gray-100">
             <th class="border p-2">Sequence</th>
-            <th class="border p-2">Overlap</th>
-            <th class="border p-2">Sequence</th>
+            <th class="border p-2">Fragment</th>
+            <th class="border p-2">Start</th>
+            <th class="border p-2">End</th>
             <th class="border p-2">Length (bp)</th>
             <th class="border p-2">GC%</th>
-            <th class="border p-2">Rec. Temp Range (°C)</th>
           </tr>
         </thead>
-        <tbody id="overlapTableBody"></tbody>
+        <tbody id="fragTableBody"></tbody>
       </table>
+      </div>
+    <div id="histogramContainer" class="hidden mb-4">
+      <canvas id="gcHistogramCanvas"></canvas>
+    </div>
+    <div class="table-container">
+      <div id="overlapTableContainer" class="hidden mb-4">
+        <h3 class="text-xl font-semibold mb-2">Overlap Details</h3>
+        <table id="overlapTable" class="w-full border-collapse">
+          <thead>
+            <tr class="bg-gray-100">
+              <th class="border p-2">Sequence</th>
+              <th class="border p-2">Overlap</th>
+              <th class="border p-2">Sequence</th>
+              <th class="border p-2">Length (bp)</th>
+              <th class="border p-2">GC%</th>
+              <th class="border p-2">Rec. Temp Range (°C)</th>
+            </tr>
+          </thead>
+          <tbody id="overlapTableBody"></tbody>
+        </table>
+      </div>
     </div>
     <div class="flex space-x-2 mb-4">
       <button id="downloadBtn" role="button" aria-label="Download FASTA output" class="bg-indigo-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-teal-600 transition duration-200 hidden">Download FASTA</button>
@@ -766,10 +836,14 @@ function drawHistogram(gcData) {
   });
   // Since labels are rotated -90 degrees, their width becomes height
   // Add padding (e.g., 30px for x-axis title, 10px for spacing, 20px buffer)
-  const bottomMargin = maxLabelWidth + 30 + 10 + 20;
-  const margin = { top: 60, right: 30, bottom: bottomMargin, left: 80 };
+  const isMobile = window.innerWidth <= 640;
+<!--  const bottomMargin = maxLabelWidth + 30 + 10 + 20;-->
+  const bottomMargin = isMobile ? maxLabelWidth + 20 : maxLabelWidth + 30 + 10 + 20; // Reduced bottom margin on mobile
+<!--  const margin = { top: 60, right: 30, bottom: bottomMargin, left: 80 };-->
+  const margin = { top: isMobile ? 40 : 60, right: 20, bottom: bottomMargin, left: isMobile ? 60 : 80 };
   // Set canvas height: plot height + top margin + bottom margin
-  const plotHeight = 400; // Fixed plot height for consistency
+<!--  const plotHeight = 400; // Fixed plot height for consistency-->
+  const plotHeight = isMobile ? 300 : 400; // Reduced height on mobile
   canvas.height = plotHeight + margin.top + margin.bottom;
 
   const plotWidth = canvas.width - margin.left - margin.right;
@@ -779,7 +853,8 @@ function drawHistogram(gcData) {
     document.getElementById("histogramContainer").classList.add("hidden");
     return;
   }
-  const barWidth = Math.min(40, plotWidth / totalFragments * 0.8);
+<!--  const barWidth = Math.min(40, plotWidth / totalFragments * 0.8);-->
+  const barWidth = Math.min(isMobile ? 30 : 40, plotWidth / totalFragments * 0.8);
   const barSpacing = (plotWidth - barWidth * totalFragments) / (totalFragments + 1);
   const gcValues = gcData.flatMap(seq => seq.fragments ? seq.fragments.map(f => f.gc * 100) : []);
   const maxGC = gcValues.length > 0 ? Math.ceil(Math.max(...gcValues) / 10) * 10 : 100;
@@ -823,13 +898,15 @@ function drawHistogram(gcData) {
     ctx.strokeStyle = "#000000";
     ctx.lineWidth = 1;
     ctx.stroke();
-    ctx.font = "14px Inter";
+<!--    ctx.font = "14px Inter";-->
+    ctx.font = isMobile ? "12px Inter" : "14px Inter";
     ctx.fillStyle = "#000000";
     ctx.textAlign = "right";
     ctx.textBaseline = "middle";
     for (let gc = minGC; gc <= maxGC; gc += 10) {
       const y = margin.top + plotHeight - ((gc - minGC) * barHeightScale);
-      ctx.fillText(`${gc}%`, margin.left - 15, y);
+<!--      ctx.fillText(`${gc}%`, margin.left - 15, y);-->
+      ctx.fillText(`${gc}%`, margin.left - 10, y);
     }
     // Draw x-axis labels with -90 degree tilt
     let barIndex = 0;
@@ -839,10 +916,13 @@ function drawHistogram(gcData) {
           const label = `${seq.id}_F${fragIdx + 1}`;
           const x = margin.left + barSpacing * (barIndex + 1) + barWidth * barIndex + barWidth / 2;
           const y = margin.top + plotHeight + 10; // Base y for rotation
+<!--          const y = margin.top + plotHeight + (isMobile ? 8 : 10);-->
           ctx.save();
           ctx.translate(x, y);
-          ctx.rotate(-Math.PI / 4); // Tilt -90 degrees
+<!--          ctx.rotate(-Math.PI / 3); // Tilt -90 degrees-->
+          ctx.rotate(isMobile ? -Math.PI / 2 : -Math.PI / 3);
           ctx.textAlign = "right";
+<!--          ctx.textAlign = isMobile ? "right" : "center";-->
           ctx.textBaseline = "top";
           ctx.fillText(label, 0, 0);
           ctx.restore();
@@ -851,26 +931,32 @@ function drawHistogram(gcData) {
       }
     });
     // Draw x-axis title
-    ctx.font = "16px Inter";
+<!--    ctx.font = "16px Inter";-->
+    ctx.font = isMobile ? "14px Inter" : "16px Inter";
     ctx.textAlign = "center";
     ctx.textBaseline = "top";
-    ctx.fillText("Fragments", canvas.width / 2, margin.top + plotHeight + maxLabelWidth + 20);
+<!--    ctx.fillText("Fragments", canvas.width / 2, margin.top + plotHeight + maxLabelWidth + 20);-->
+    ctx.fillText("Fragments", canvas.width / 2, margin.top + plotHeight + (isMobile ? maxLabelWidth + 15 : maxLabelWidth + 20));
     // Draw y-axis title
-    ctx.font = "16px Inter";
+<!--    ctx.font = "16px Inter";-->
+    ctx.font = isMobile ? "14px Inter" : "16px Inter";
     ctx.fillStyle = "#000000";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.save();
-    ctx.translate(margin.left / 2 - 20, margin.top + plotHeight / 2);
+<!--    ctx.translate(margin.left / 2 - 20, margin.top + plotHeight / 2);-->
+    ctx.translate(margin.left / 2 - (isMobile ? 15 : 20), margin.top + plotHeight / 2);
     ctx.rotate(-Math.PI / 2);
     ctx.fillText("GC Content (%)", 0, 0);
     ctx.restore();
     // Draw main title
-    ctx.font = "20px Inter";
+<!--    ctx.font = "20px Inter";-->
+    ctx.font = isMobile ? "16px Inter" : "20px Inter";
     ctx.fillStyle = "#000000";
     ctx.textAlign = "center";
     ctx.textBaseline = "top";
-    ctx.fillText("GC Content Distribution", canvas.width / 2, margin.top / 2 - 20);
+<!--    ctx.fillText("GC Content Distribution", canvas.width / 2, margin.top / 2 - 20);-->
+    ctx.fillText("GC Content Distribution", canvas.width / 2, margin.top / 2 - (isMobile ? 15 : 20));
     // Draw bars
     barIndex = 0;
     gcData.forEach((seq, seqIdx) => {
@@ -894,9 +980,11 @@ function drawHistogram(gcData) {
           ctx.closePath();
           ctx.fill();
           ctx.shadowBlur = 0;
-          ctx.font = "12px Inter";
+<!--          ctx.font = "12px Inter";-->
+          ctx.font = isMobile ? "10px Inter" : "12px Inter";
           ctx.fillStyle = "#000000";
-          ctx.fillText(`${(frag.gc * 100).toFixed(1)}%`, x + barWidth / 2, y - 20);
+<!--          ctx.fillText(`${(frag.gc * 100).toFixed(1)}%`, x + barWidth / 2, y - 20);-->
+          ctx.fillText(`${(frag.gc * 100).toFixed(1)}%`, x + barWidth / 2, y - (isMobile ? 15 : 20));
           barIndex++;
         });
       }
