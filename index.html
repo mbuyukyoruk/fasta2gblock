@@ -455,7 +455,7 @@
       </div>
       <label class="block w-full flex items-center tooltip" data-tooltip="Optimize overlaps for GC content and avoid repeats">
         <input type="checkbox" id="gcBalance" class="mr-2 h-4 w-4 text-indigo-600 focus:ring-teal-500 border-gray-300 rounded" aria-label="Enforce GC% constraints">
-        <span class="text-gray-700 font-medium">Enforce GC% & no 4+ mono/di/tri‐repeats in overlaps</span>
+        <span class="text-gray-700 font-medium">Enforce GC% & avoid 4+ mono/di/tri‐repeats in overlaps</span>
       </label>
       <div class="flex flex-col md:flex-row space-x-0 md:space-x-4">
         <label class="block flex-1 tooltip" data-tooltip="Recommended: 35–45% for overlaps">
@@ -497,9 +497,6 @@
       <canvas id="gcHistogramCanvas"></canvas>
     </div>
     <div class="table-container">
-<!--      <div id="overlapTableContainer" class="hidden mb-4">-->
-<!--        <h3 class="text-xl font-semibold mb-2">Overlap Details</h3>-->
-<!--        <table id="overlapTable" class="w-full border-collapse">-->
         <table id="overlapTableContainer" class="hidden mb-4">
           <thead>
             <tr class="bg-gray-100">
@@ -513,7 +510,6 @@
           </thead>
           <tbody id="overlapTableBody"></tbody>
         </table>
-<!--      </div>-->
     </div>
     <div class="flex space-x-2 mb-4">
       <button id="downloadBtn" role="button" aria-label="Download FASTA output" class="bg-indigo-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-teal-600 transition duration-200 hidden">Download FASTA</button>
@@ -820,12 +816,9 @@ function drawHistogram(gcData) {
   // Since labels are rotated -90 degrees, their width becomes height
   // Add padding (e.g., 30px for x-axis title, 10px for spacing, 20px buffer)
   const isMobile = window.innerWidth <= 640;
-<!--  const bottomMargin = maxLabelWidth + 30 + 10 + 20;-->
   const bottomMargin = isMobile ? maxLabelWidth + 20 : maxLabelWidth + 30 + 10 + 20; // Reduced bottom margin on mobile
-<!--  const margin = { top: 60, right: 30, bottom: bottomMargin, left: 80 };-->
   const margin = { top: isMobile ? 40 : 60, right: 20, bottom: bottomMargin, left: isMobile ? 60 : 80 };
   // Set canvas height: plot height + top margin + bottom margin
-<!--  const plotHeight = 400; // Fixed plot height for consistency-->
   const plotHeight = isMobile ? 300 : 400; // Reduced height on mobile
   canvas.height = plotHeight + margin.top + margin.bottom;
 
@@ -836,7 +829,6 @@ function drawHistogram(gcData) {
     document.getElementById("histogramContainer").classList.add("hidden");
     return;
   }
-<!--  const barWidth = Math.min(40, plotWidth / totalFragments * 0.8);-->
   const barWidth = Math.min(isMobile ? 30 : 40, plotWidth / totalFragments * 0.8);
   const barSpacing = (plotWidth - barWidth * totalFragments) / (totalFragments + 1);
   const gcValues = gcData.flatMap(seq => seq.fragments ? seq.fragments.map(f => f.gc * 100) : []);
@@ -881,14 +873,12 @@ function drawHistogram(gcData) {
     ctx.strokeStyle = "#000000";
     ctx.lineWidth = 1;
     ctx.stroke();
-<!--    ctx.font = "14px Inter";-->
     ctx.font = isMobile ? "12px Inter" : "14px Inter";
     ctx.fillStyle = "#000000";
     ctx.textAlign = "right";
     ctx.textBaseline = "middle";
     for (let gc = minGC; gc <= maxGC; gc += 10) {
       const y = margin.top + plotHeight - ((gc - minGC) * barHeightScale);
-<!--      ctx.fillText(`${gc}%`, margin.left - 15, y);-->
       ctx.fillText(`${gc}%`, margin.left - 10, y);
     }
     // Draw x-axis labels with -90 degree tilt
@@ -899,13 +889,10 @@ function drawHistogram(gcData) {
           const label = `${seq.id}_F${fragIdx + 1}`;
           const x = margin.left + barSpacing * (barIndex + 1) + barWidth * barIndex + barWidth / 2;
           const y = margin.top + plotHeight + 10; // Base y for rotation
-<!--          const y = margin.top + plotHeight + (isMobile ? 8 : 10);-->
           ctx.save();
           ctx.translate(x, y);
-<!--          ctx.rotate(-Math.PI / 3); // Tilt -90 degrees-->
           ctx.rotate(isMobile ? -Math.PI / 2 : -Math.PI / 3);
           ctx.textAlign = "right";
-<!--          ctx.textAlign = isMobile ? "right" : "center";-->
           ctx.textBaseline = "top";
           ctx.fillText(label, 0, 0);
           ctx.restore();
@@ -914,31 +901,25 @@ function drawHistogram(gcData) {
       }
     });
     // Draw x-axis title
-<!--    ctx.font = "16px Inter";-->
     ctx.font = isMobile ? "14px Inter" : "16px Inter";
     ctx.textAlign = "center";
     ctx.textBaseline = "top";
-<!--    ctx.fillText("Fragments", canvas.width / 2, margin.top + plotHeight + maxLabelWidth + 20);-->
-    ctx.fillText("Fragments", canvas.width / 2, margin.top + plotHeight + (isMobile ? maxLabelWidth + 15 : maxLabelWidth + 20));
+    ctx.fillText("Fragments", canvas.width / 2, margin.top + plotHeight + (isMobile ? maxLabelWidth + 15 : maxLabelWidth + 15));
     // Draw y-axis title
-<!--    ctx.font = "16px Inter";-->
     ctx.font = isMobile ? "14px Inter" : "16px Inter";
     ctx.fillStyle = "#000000";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.save();
-<!--    ctx.translate(margin.left / 2 - 20, margin.top + plotHeight / 2);-->
     ctx.translate(margin.left / 2 - (isMobile ? 15 : 20), margin.top + plotHeight / 2);
     ctx.rotate(-Math.PI / 2);
     ctx.fillText("GC Content (%)", 0, 0);
     ctx.restore();
     // Draw main title
-<!--    ctx.font = "20px Inter";-->
     ctx.font = isMobile ? "16px Inter" : "20px Inter";
     ctx.fillStyle = "#000000";
     ctx.textAlign = "center";
     ctx.textBaseline = "top";
-<!--    ctx.fillText("GC Content Distribution", canvas.width / 2, margin.top / 2 - 20);-->
     ctx.fillText("GC Content Distribution", canvas.width / 2, margin.top / 2 - (isMobile ? 15 : 20));
     // Draw bars
     barIndex = 0;
@@ -963,10 +944,8 @@ function drawHistogram(gcData) {
           ctx.closePath();
           ctx.fill();
           ctx.shadowBlur = 0;
-<!--          ctx.font = "12px Inter";-->
           ctx.font = isMobile ? "10px Inter" : "12px Inter";
           ctx.fillStyle = "#000000";
-<!--          ctx.fillText(`${(frag.gc * 100).toFixed(1)}%`, x + barWidth / 2, y - 20);-->
           ctx.fillText(`${(frag.gc * 100).toFixed(1)}%`, x + barWidth / 2, y - (isMobile ? 15 : 20));
           barIndex++;
         });
